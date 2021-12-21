@@ -41,6 +41,7 @@ public class DatabaseHandler {
             statement.setObject(10, country.generosity);
             statement.setObject(11, country.dystopiaResidual);
             statement.execute();
+
             var regionStatement = this.connection.prepareStatement("INSERT INTO Regions(name, region) VALUES (?, ?)");
             regionStatement.setObject(1, country.name);
             regionStatement.setObject(2, country.region);
