@@ -13,7 +13,7 @@ public class main {
             task.getCountriesEconomyBar();
             task.printHighEconomyCountry();
             task.printAverageEconomyCountry();
-        } catch (SQLException e) {
+        } catch (SQLException | IOException e) {
             e.printStackTrace();
         }
     }

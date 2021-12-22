@@ -8,6 +8,10 @@ import org.jfree.data.category.DefaultCategoryDataset;
 
 import javax.swing.*;
 import java.awt.*;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 
 public class Task {
@@ -18,12 +22,16 @@ public class Task {
     }
 
 
-    public void getCountriesEconomyBar() {
+    public void getCountriesEconomyBar() throws IOException {
         var countries = db.getAllCountryList();
+        var lines = new ArrayList<String>();
         var data = new DefaultCategoryDataset();
         for (var e : countries) {
             data.addValue(e.getRight(), e.getLeft(), e.getMiddle());
+            lines.add(String.format("Страна: %s     показатель экономики: %s", e.getLeft(), e.getRight()));
         }
+        var file = Paths.get("countries.txt");
+        Files.write(file, lines, StandardCharsets.UTF_8);
         var chart = ChartFactory.createBarChart3D(
                 "Показатели экономики стран",
                 "Страна",

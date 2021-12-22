@@ -26,7 +26,7 @@ public class DatabaseHandler {
 
     public void addCountry(Country country) {
         try {
-            var statement = this.connection.prepareStatement(
+            var statement = connection.prepareStatement(
                     "INSERT INTO Countries(name, happinessRank, happinessScore, standardError, economy, family, health, freedom, trust, generosity, dystopiaResidual) " +
                             "VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             statement.setObject(1, country.name);
@@ -42,7 +42,7 @@ public class DatabaseHandler {
             statement.setObject(11, country.dystopiaResidual);
             statement.execute();
 
-            var regionStatement = this.connection.prepareStatement("INSERT INTO Regions(name, region) VALUES (?, ?)");
+            var regionStatement = connection.prepareStatement("INSERT INTO Regions(name, region) VALUES (?, ?)");
             regionStatement.setObject(1, country.name);
             regionStatement.setObject(2, country.region);
             regionStatement.execute();
