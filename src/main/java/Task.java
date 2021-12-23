@@ -1,4 +1,3 @@
-import org.apache.commons.lang3.tuple.Pair;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.axis.CategoryLabelPositions;
@@ -13,22 +12,25 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class Task {
     private final DatabaseHandler db;
+    private final ArrayList<String> countries;
 
     public Task(DatabaseHandler db) {
         this.db = db;
+        countries = db.getAllCountryList();
     }
 
 
     public void getCountriesEconomyBar() throws IOException {
-        var countries = db.getAllCountryList();
         var lines = new ArrayList<String>();
         var data = new DefaultCategoryDataset();
         for (var e : countries) {
-            data.addValue(e.getRight(), e.getLeft(), e.getMiddle());
-            lines.add(String.format("Страна: %s     показатель экономики: %s", e.getLeft(), e.getRight()));
+            var economy = db.getCountryField(e, "economy");
+            data.addValue(economy, e, db.getCountryRegion(e));
+            lines.add(String.format("Страна: %s     показатель экономики: %s", e, economy));
         }
         var file = Paths.get("countries.txt");
         Files.write(file, lines, StandardCharsets.UTF_8);
@@ -64,40 +66,31 @@ public class Task {
     }
 
     public void printAverageEconomyCountry() {
-        var countries = db.getNameEconomyCountryList("Western Europe", "North America");
-        var maxEconomyCountry = countries.get(0);
-        var minEconomyCountry = countries.get(countries.size() - 1);
-        var averageEconomyCountry = getNameAverageCountry(maxEconomyCountry, minEconomyCountry, countries);
-        System.out.printf("#3 Страна с \"самыми средними показателями\" среди \"Western Europe\" и \"North America\": %s\n", averageEconomyCountry);
-    }
-
-    private String getNameAverageCountry(Pair<String, Double> max, Pair<String, Double> min, ArrayList<Pair<String, Double>> countries) {
-
-        var approximateAverage = Pair.of("", Double.MAX_VALUE);
-        var average = (max.getRight() + min.getRight()) / 2;
-        var minDelta = Double.MAX_VALUE;
-        var left = 0;
-        var right = countries.size() - 1;
-        while (left <= right) {
-            var i = (left + right) / 2;
-            if (Math.abs(countries.get(i).getRight() - average) < minDelta){
-                minDelta = Math.abs(countries.get(i).getRight() - average);
-                approximateAverage = Pair.of(countries.get(i).getLeft(), countries.get(i).getRight());
-            }
-            if (i + i/2 < countries.size() && Math.abs(countries.get(i + i/2).getRight() - average) < minDelta){
-                left = i + i/2;
-                minDelta = Math.abs(countries.get(i + i/2).getRight() - average);
-                approximateAverage = Pair.of(countries.get(i + i/2).getLeft(), countries.get(i + i/2).getRight());
-                continue;
-            }
-            else if (i - i/2 >= 0 && Math.abs(countries.get(i - i/2).getRight() - average) < minDelta){
-                right = i - i/2;
-                minDelta = Math.abs(countries.get(i - i/2).getRight() - average);
-                approximateAverage = Pair.of(countries.get(i - i/2).getLeft(), countries.get(i - i/2).getRight());
-                continue;
-            }
-            break;
+        var countries = db.getCountryListByRegions("Western Europe", "North America");
+        var fields = new String[]{"happinessScore", "standardError", "economy", "family", "health", "freedom", "trust", "generosity", "dystopiaResidual"};
+        var referenceAverages = new double[fields.length];
+        for (var i = 0; i < fields.length; i++) {
+            referenceAverages[i] = db.getFieldAverage(fields[i], "Western Europe", "North America");
         }
-        return approximateAverage.getLeft();
+        var minDeltas = Arrays.stream(new double[fields.length]).map(x -> Double.MAX_VALUE).toArray();
+        var maxMinDeltaCount = 0;
+        var averageCountry = "";
+        for (var country : countries) {
+            var curCount = 0;
+            var curDeltas = new double[fields.length];
+            for (var i = 0; i < fields.length; i++) {
+                var field = db.getCountryField(country, fields[i]);
+                curDeltas[i] = Math.abs(referenceAverages[i] - field);
+                if (curDeltas[i] < minDeltas[i]) {
+                    curCount++;
+                }
+            }
+            if (curCount > maxMinDeltaCount) {
+                minDeltas = Arrays.copyOf(curDeltas, curDeltas.length);
+                maxMinDeltaCount = curCount;
+                averageCountry = country;
+            }
+        }
+        System.out.printf("#3 Страна с \"самыми средними показателями\" среди \"Western Europe\" и \"North America\": %s\n", averageCountry);
     }
 }

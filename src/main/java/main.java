@@ -1,4 +1,3 @@
-import java.io.IOException;
 import java.sql.SQLException;
 
 public class main {
@@ -10,10 +9,10 @@ public class main {
             //db.fillDataBase(Parser.parseCSV());
 
             var task = new Task(db);
-            task.getCountriesEconomyBar();
+            /*task.getCountriesEconomyBar();*/
             task.printHighEconomyCountry();
             task.printAverageEconomyCountry();
-        } catch (SQLException | IOException e) {
+        } catch (SQLException e) {
             e.printStackTrace();
         }
     }

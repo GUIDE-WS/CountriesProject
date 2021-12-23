@@ -1,5 +1,3 @@
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.lang3.tuple.Triple;
 import org.sqlite.JDBC;
 
 import java.sql.Connection;
@@ -63,21 +61,17 @@ public class DatabaseHandler {
         }
     }
 
-    public ArrayList<Triple<String, String, Double>> getAllCountryList() {
-        var countries = new ArrayList<Triple<String, String, Double>>();
+    public ArrayList<String> getAllCountryList() {
+        var countries = new ArrayList<String>();
         try {
             var statement = connection.prepareStatement("""
-                    SELECT Countries.name, Countries.economy, Regions.region
-                    from Countries, Regions
-                    where Countries.name = Regions.name
-                    order by economy DESC""");
+                    SELECT DISTINCT Countries.name
+                    FROM Countries
+                    ORDER BY economy DESC
+                    """);
             var countriesSet = statement.executeQuery();
             while (countriesSet.next()) {
-                var name = countriesSet.getString("name");
-                var coefficient = countriesSet.getDouble("economy");
-                var region = countriesSet.getString("region");
-                var country = Triple.of(name, region, coefficient);
-                countries.add(country);
+                countries.add(countriesSet.getString("name"));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -89,9 +83,10 @@ public class DatabaseHandler {
         try {
             var statement = connection.prepareStatement("""
                     SELECT Countries.name
-                     from Countries, Regions
-                     where (Regions.region = ? or Regions.region = ?) and Countries.name = Regions.name
-                     order by economy DESC""");
+                    FROM Countries, Regions
+                    WHERE (Regions.region = ? OR Regions.region = ?) AND Countries.name = Regions.name
+                    ORDER BY economy DESC
+                    LIMIT 1""");
             statement.setObject(1, region1);
             statement.setObject(2, region2);
             return statement.executeQuery().getString("name");
@@ -101,25 +96,61 @@ public class DatabaseHandler {
         return "";
     }
 
-    public ArrayList<Pair<String, Double>> getNameEconomyCountryList(String region1, String region2) {
-        var countries = new ArrayList<Pair<String, Double>>();
+    public ArrayList<String> getCountryListByRegions(String region1, String region2) {
+        var countries = new ArrayList<String>();
         try {
             var statement = connection.prepareStatement("""
-                    SELECT Countries.name, Countries.economy
+                    SELECT Countries.name
                     from Countries, Regions
                     where (Regions.region = ? or Regions.region = ?) and Countries.name = Regions.name
-                    order by economy DESC""");
+                    """);
             statement.setObject(1, region1);
             statement.setObject(2, region2);
             var countriesSet = statement.executeQuery();
             while (countriesSet.next()) {
-                var name = countriesSet.getString("name");
-                var coefficient = countriesSet.getDouble("economy");
-                countries.add(Pair.of(name, coefficient));
+                countries.add(countriesSet.getString("name"));
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
         return countries;
+    }
+
+    public String getCountryRegion(String name) {
+        try {
+            var statement = connection.prepareStatement("""
+                    SELECT region FROM Regions
+                    WHERE Regions.name = ?
+                    """);
+            statement.setObject(1, name);
+            return statement.executeQuery().getString("region");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return "";
+    }
+
+    public double getCountryField(String name, String field) {
+        try {
+            var statement = connection.prepareStatement(String.format("SELECT \"%s\" FROM Countries WHERE Countries.name = ?", field));
+            statement.setObject(1, name);
+            return statement.executeQuery().getDouble(field);
+
+        } catch (Exception exception) {
+            exception.printStackTrace();
+        }
+        return 0.0;
+    }
+
+    public double getFieldAverage(String field, String region1, String region2) {
+        try {
+            var statement = connection.prepareStatement(String.format("SELECT AVG(\"%s\"), region FROM Countries, Regions WHERE Regions.region = ? OR Regions.region = ?", field));
+            statement.setObject(1, region1);
+            statement.setObject(2, region2);
+            return statement.executeQuery().getDouble(1);
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+        return 0.0;
     }
 }
